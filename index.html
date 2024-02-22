@@ -42,12 +42,24 @@
       background-color: #fff;
       border: 1px solid #000;
     }
+    .api-key-input {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+    }
   </style>
 </head>
 <body>
 
 <div id="board"></div>
 <div id="status" class="status"></div>
+<div id="api-key-input" class="api-key-input">
+  <input type="text" id="api-key" placeholder="请输入您的API密钥">
+  <button onclick="submitApiKey()">提交</button>
+</div>
 
 <script>
   const board = document.getElementById('board');
@@ -55,6 +67,7 @@
   let currentPlayer = 'black';
   let gameOver = false;
   let aiOnline = false;
+  let apiKey = '';
 
   // 创建棋盘
   for (let i = 0; i < 15; i++) {
@@ -70,10 +83,11 @@
 
   // 检查AI助手是否在线
   function checkAIOnline() {
+    if (!apiKey) return;
     fetch('https://api.openai.com/v1/ai/health', {
       method: 'GET',
       headers: {
-        'Authorization': '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' // 替换为您的API密钥
+        'Authorization': `Bearer ${apiKey}`
       }
     })
     .then(response => {
@@ -121,13 +135,12 @@
   function callAI() {
     if (!aiOnline) return;
     const currentBoardState = getCurrentBoardState();
-    const api_key = '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'; // 替换为您的API密钥
     const url = 'https://api.openai.com/v1/ai/move';
     fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${api_key}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         player: currentPlayer,
@@ -164,6 +177,12 @@
   // 检查是否有玩家获胜
   function checkWinner(row, col) {
     // 实现检查获胜的逻辑
+  }
+
+  // 提交API密钥
+  function submitApiKey() {
+    apiKey = document.getElementById('api-key').value.trim();
+    checkAIOnline();
   }
 
   // 初始化时检查AI助手在线状态
