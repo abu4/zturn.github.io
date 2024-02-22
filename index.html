@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏</title>
+  <title>与 Bard 对战的五子棋游戏</title>
   <style>
     /* 样式代码 */
     body {
@@ -42,32 +42,18 @@
       background-color: #fff;
       border: 1px solid #000;
     }
-    .api-key-input {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      padding: 10px;
-      background-color: #fff;
-      border: 1px solid #000;
-    }
   </style>
 </head>
 <body>
 
 <div id="board"></div>
 <div id="status" class="status"></div>
-<div id="api-key-input" class="api-key-input">
-  <input type="text" id="api-key" placeholder="请输入您的API密钥">
-  <button onclick="submitApiKey()">提交</button>
-</div>
 
 <script>
   const board = document.getElementById('board');
   const status = document.getElementById('status');
   let currentPlayer = 'black';
   let gameOver = false;
-  let aiOnline = false;
-  let apiKey = '';
 
   // 创建棋盘
   for (let i = 0; i < 15; i++) {
@@ -81,40 +67,11 @@
     }
   }
 
-  // 检查AI助手是否在线
-  function checkAIOnline() {
-    if (!apiKey) return;
-    fetch('https://api.openai.com/v1/ai/health', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    })
-    .then(response => {
-      if (response.ok) {
-        aiOnline = true;
-        status.textContent = 'AI助手在线';
-      } else {
-        aiOnline = false;
-        status.textContent = 'AI助手离线';
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      aiOnline = false;
-      status.textContent = 'AI助手离线';
-    });
-  }
-
   // 处理点击事件
   function handleClick() {
-    if (!aiOnline) {
-      alert('AI助手当前离线，请稍后再试！');
-      return;
-    }
     if (gameOver) return;
     if (this.classList.contains('black') || this.classList.contains('white')) return;
-    
+
     const row = parseInt(this.dataset.row);
     const col = parseInt(this.dataset.col);
     this.classList.add(currentPlayer);
@@ -127,34 +84,35 @@
 
     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
 
-    // 调用AI助手
-    callAI();
+    // 调用 Bard 落子
+    callBard(row, col);
   }
 
-  // 调用AI助手
-  function callAI() {
-    if (!aiOnline) return;
+  // 调用 Bard 落子
+  function callBard(row, col) {
     const currentBoardState = getCurrentBoardState();
-    const url = 'https://api.openai.com/v1/ai/move';
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        player: currentPlayer,
-        board: currentBoardState
-      })
-    })
+ const requestBody = {
+  board: currentBoardState,
+  player: currentPlayer,
+};
+
+fetch('https://api.bard.ai/games/gomoku/move', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${AIzaSyBZ3ZgfDLmlqLsRcB7sq6QpiaRumosCodM}`
+  },
+  body: JSON.stringify(requestBody),
+})
     .then(response => response.json())
     .then(data => {
       const aiMove = data.move;
-      const aiCell = document.querySelector(`.cell[data-row='${aiMove.row}'][data-col='${aiMove.col}']`);
-      aiCell.click(); // AI助手落子
+      const aiCell = document.querySelector(`.cell[data-row='<span class="math-inline">\{aiMove\.row\}'\]\[data\-col\='</span>{aiMove.col}']`);
+      aiCell.click(); // Bard 落子
     })
     .catch(error => {
       console.error('Error:', error);
+      alert('Bard 无法落子，请稍后再试！');
     });
   }
 
@@ -175,18 +133,37 @@
   }
 
   // 检查是否有玩家获胜
-  function checkWinner(row, col) {
-    // 实现检查获胜的逻辑
+function checkWinner(row, col) {
+  const directions = [[1, 0], [0, 1], [1, 1], [1, -1]]; // 检查的四个方向：竖直、水平、对角线（正斜线、反斜线）
+  for (const [dx, dy] of directions) {
+    let count = 1;
+    for (let step = 1; step < 5; step++) {
+      const newRow = row + step * dx;
+      const newCol = col + step * dy;
+      const cell = document.querySelector(`.cell[data-row='${newRow}'][data-col='${newCol}']`);
+      if (cell && cell.classList.contains(currentPlayer)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    for (let step = 1; step < 5; step++) {
+      const newRow = row - step * dx;
+      const newCol = col - step * dy;
+      const cell = document.querySelector(`.cell[data-row='${newRow}'][data-col='${newCol}']`);
+      if (cell && cell.classList.contains(currentPlayer)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    if (count >= 5) {
+      return true; // 找到获胜的连续棋子
+    }
   }
+  return false; // 没有找到获胜的情况
+}
 
-  // 提交API密钥
-  function submitApiKey() {
-    apiKey = document.getElementById('api-key').value.trim();
-    checkAIOnline();
-  }
-
-  // 初始化时检查AI助手在线状态
-  checkAIOnline();
 </script>
 
 </body>
