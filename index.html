@@ -1,48 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>验证 OpenAI API Key.1</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>与AI助手交互的五子棋游戏</title>
+  <style>
+    /* 样式代码 */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(15, 40px);
+      grid-template-rows: repeat(15, 40px);
+      gap: 1px;
+    }
+    .cell {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #000;
+      background-color: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+    .black {
+      background-color: #000;
+      color: #fff;
+      border-radius: 50%;
+    }
+    .white {
+      background-color: #fff;
+      color: #000;
+      border-radius: 50%;
+    }
+    .status {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+    }
+    .api-key-input {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+    }
+  </style>
 </head>
 <body>
-    <h1>验证 OpenAI API Key</h1>
-    <form id="api-key-form">
-        <label for="api-key">请输入您的 OpenAI API Key：</label><br>
-        <input type="text" id="api-key" name="api-key" required><br>
-        <button type="button" onclick="checkApiKey()">验证</button>
-    </form>
-    <p id="result"></p>
 
-    <script>
-        function checkApiKey() {
-            const apiKey = document.getElementById('api-key').value.trim();
-            const backendURL = 'https://api.openai.com/v1/engines';
+<div id="board"></div>
+<div id="status" class="status"></div>
+<div id="api-key-input" class="api-key-input">
+  <input type="text" id="api-key" placeholder="请输入您的API密钥">
+  <button onclick="submitApiKey()">提交</button>
+</div>
 
-            // 提供用户反馈
-            document.getElementById('result').textContent = '正在验证 OpenAI API 密钥...';
+<script>
+  const board = document.getElementById('board');
+  const status = document.getElementById('status');
+  let currentPlayer = 'black';
+  let gameOver = false;
+  let aiOnline = false;
+  let apiKey = '';
 
-            // 发送 API 密钥到 OpenAI API 进行验证
-            fetch(backendURL, {
-                headers: {
-                    'Authorization': 'Bearer ' + apiKey
-                }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('OpenAI API 密钥验证失败');
-                    }
-                })
-                .then(data => {
-                    document.getElementById('result').textContent = 'OpenAI API 密钥验证成功';
-                    console.log(data); // 这里可以打印更详细的信息
-                })
-                .catch(error => {
-                    document.getElementById('result').textContent = error.message;
-                });
-        }
-    </script>
+  // 创建棋盘
+  for (let i = 0; i < 15; i++) {
+    for (let j = 0; j < 15; j++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.row = i;
+      cell.dataset.col = j;
+      cell.addEventListener('click', handleClick);
+      board.appendChild(cell);
+    }
+  }
+
+  // 初始化时检查AI助手在线状态
+  checkAIOnline();
+
+  // 检查AI助手是否在线
+  function checkAIOnline() {
+    if (!apiKey) return;
+    fetch('https://api.openai.com/v1/ai/health', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        aiOnline = true;
+        status.textContent = 'AI助手在线';
+      } else {
+        aiOnline = false;
+        status.textContent = 'AI助手离线';
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      aiOnline = false;
+      status.textContent = 'AI助手离线';
+    });
+  }
+
+  // 处理点击事件
+  function handleClick() {
+    if (!aiOnline) {
+      alert('AI助手当前离线，请稍后再试！');
+      return;
+    }
+    if (gameOver) return;
+    if (this.classList.contains('black') || this.classList.contains('white')) return;
+    
+    const row = parseInt(this.dataset.row);
+    const col = parseInt(this.dataset.col);
+    this.classList.add(currentPlayer);
+
+    if (checkWinner(row, col)) {
+      alert(currentPlayer === 'black' ? '黑棋获胜！' : '白棋获胜！');
+      gameOver = true;
+      return;
+    }
+
+    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+
+    // 调用AI助手
+    callAI();
+  }
+
+  // 调用AI助手
+  function callAI() {
+    if (!aiOnline) return;
+    const currentBoardState = getCurrentBoardState();
+    const url = 'https://api.openai.com/v1/ai/move';
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        player: currentPlayer,
+        board: currentBoardState
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      const aiMove = data.move;
+      const aiCell = document.querySelector(`.cell[data-row='${aiMove.row}'][data-col='${aiMove.col}']`);
+      aiCell.click(); // AI助手落子
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+
+  // 获取当前棋盘状态
+  function getCurrentBoardState() {
+    const cells = document.querySelectorAll('.cell');
+    let boardState = '';
+    cells.forEach(cell => {
+      if (cell.classList.contains('black')) {
+        boardState += 'B';
+      } else if (cell.classList.contains('white')) {
+        boardState += 'W';
+      } else {
+        boardState += '-';
+      }
+    });
+    return boardState;
+  }
+
+  // 检查是否有玩家获胜
+  function checkWinner(row, col) {
+    const directions = [
+      { row: 0, col: 1 },   // 水平
+      { row: 1, col: 0 },   // 垂直
+      { row: 1, col: 1 },   // 右下斜向
+      { row: 1, col: -1 }   // 左下斜向
+    ];
+
+    for (const dir of directions) {
+      if (countConsecutive(row, col, dir.row, dir.col) === 5) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // 辅助函数：计算连续的棋子数
+  function countConsecutive(row, col, rowDir, colDir) {
+    const playerClass = currentPlayer === 'black' ? 'black' : 'white';
+    let count = 0;
+
+    for (let i = -4; i <= 4; i++) {
+      const newRow = row + i * rowDir;
+      const newCol = col + i * colDir;
+
+      const cell = document.querySelector(`.cell[data-row='${newRow}'][data-col='${newCol}']`);
+
+      if (!cell) continue;
+
+      if (cell.classList.contains(playerClass)) {
+        count++;
+      } else {
+        count = 0;
+      }
+
+      if (count === 5) {
+        return 5; // 有5子连珠
+      }
+    }
+
+    return count;
+  }
+
+  // 提交API密钥
+  function submitApiKey() {
+    apiKey = document.getElementById('api-key').value.trim();
+    checkAIOnline();
+  }
+</script>
+
 </body>
 </html>
