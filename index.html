@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏0.4</title>
+  <title>与AI助手交互的五子棋游戏</title>
   <style>
     /* 样式代码 */
     body {
@@ -50,6 +50,17 @@
       background-color: #fff;
       border: 1px solid #000;
     }
+    .log {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+      width: 300px;
+      overflow: auto;
+      max-height: 200px;
+    }
   </style>
 </head>
 <body>
@@ -60,10 +71,13 @@
   <input type="text" id="api-key" placeholder="请输入您的API密钥">
   <button onclick="submitApiKey()">提交</button>
 </div>
+<div id="log" class="log"></div>
+<button onclick="callAI()">AI落子</button>
 
 <script>
   const board = document.getElementById('board');
   const status = document.getElementById('status');
+  const log = document.getElementById('log');
   let currentPlayer = 'black';
   let gameOver = false;
   let aiOnline = false;
@@ -127,8 +141,11 @@
 
     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
 
+    // 记录用户落子
+    log.textContent += `用户落子：${currentPlayer}，位置：(${row}, ${col})\n`;
+
     // 调用AI助手
-    callAI();
+    // callAI();  // 此处注释掉，由按钮触发AI落子
   }
 
   // 调用AI助手
@@ -152,6 +169,7 @@
       const aiMove = data.move;
       const aiCell = document.querySelector(`.cell[data-row='${aiMove.row}'][data-col='${aiMove.col}']`);
       aiCell.click(); // AI助手落子
+      log.textContent += `AI落子：${currentPlayer === 'black' ? 'white' : 'black'}，位置：(${aiMove.row}, ${aiMove.col})\n`;
     })
     .catch(error => {
       console.error('Error:', error);
@@ -177,6 +195,7 @@
   // 检查是否有玩家获胜
   function checkWinner(row, col) {
     // 实现检查获胜的逻辑
+    return false;  // 示例代码，请根据实际情况修改
   }
 
   // 提交API密钥
