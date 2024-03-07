@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏0.2</title>
+  <title>与AI助手交互的五子棋游戏0.3</title>
   <style>
     /* 样式代码 */
     body {
@@ -61,6 +61,7 @@
       background-color: #fff;
       border: 1px solid #000;
       cursor: pointer;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -151,9 +152,12 @@
       alert('AI助手当前离线，请稍后再试！');
       return;
     }
+
     actionButton.disabled = true;
+
     const currentBoardState = getCurrentBoardState();
     const url = 'https://api.openai.com/v1/ai/move';
+
     fetch(url, {
       method: 'POST',
       headers: {
@@ -165,11 +169,25 @@
         board: currentBoardState
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('AI助手请求失败');
+      }
+      return response.json();
+    })
     .then(data => {
       const aiMove = data.move;
       const aiCell = document.querySelector(`.cell[data-row='${aiMove.row}'][data-col='${aiMove.col}']`);
-      aiCell.click(); // AI助手落子
+      
+      // 模拟AI落子动作
+      aiCell.classList.add(currentPlayer);
+      
+      if (checkWinner(aiMove.row, aiMove.col)) {
+        alert(currentPlayer === 'black' ? '黑棋获胜！' : '白棋获胜！');
+        gameOver = true;
+      } else {
+        currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+      }
     })
     .catch(error => {
       console.error('Error:', error);
