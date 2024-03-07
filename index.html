@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏0.3</title>
+  <title>与AI助手交互的五子棋游戏</title>
   <style>
     /* 样式代码 */
     body {
@@ -157,6 +157,13 @@
 
     const currentBoardState = getCurrentBoardState();
     const url = 'https://api.openai.com/v1/ai/move';
+
+    // 添加日志
+    console.log('Calling AI with URL:', url);
+    console.log('Request Data:', JSON.stringify({
+      player: currentPlayer,
+      board: currentBoardState
+    }));
 
     fetch(url, {
       method: 'POST',
