@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏0.1</title>
+  <title>与AI助手交互的五子棋游戏0.2</title>
   <style>
     /* 样式代码 */
     body {
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
       height: 100vh;
       margin: 0;
       background-color: #f0f0f0;
@@ -19,6 +20,7 @@
       grid-template-columns: repeat(15, 40px);
       grid-template-rows: repeat(15, 40px);
       gap: 1px;
+      margin-bottom: 20px;
     }
     .cell {
       width: 40px;
@@ -41,9 +43,6 @@
       border-radius: 50%;
     }
     .status {
-      position: fixed;
-      top: 10px;
-      right: 10px;
       padding: 10px;
       background-color: #fff;
       border: 1px solid #000;
@@ -55,6 +54,13 @@
       padding: 10px;
       background-color: #fff;
       border: 1px solid #000;
+      z-index: 1;
+    }
+    #action-button {
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -66,10 +72,12 @@
   <input type="text" id="api-key" placeholder="请输入您的API密钥">
   <button onclick="submitApiKey()">提交</button>
 </div>
+<button id="action-button" onclick="callAI()">AI落子</button>
 
 <script>
   const board = document.getElementById('board');
   const status = document.getElementById('status');
+  const actionButton = document.getElementById('action-button');
   let currentPlayer = 'black';
   let gameOver = false;
   let aiOnline = false;
@@ -135,14 +143,15 @@
     }
 
     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-
-    // 调用AI助手
-    callAI();
   }
 
   // 调用AI助手
   function callAI() {
-    if (!aiOnline) return;
+    if (!aiOnline) {
+      alert('AI助手当前离线，请稍后再试！');
+      return;
+    }
+    actionButton.disabled = true;
     const currentBoardState = getCurrentBoardState();
     const url = 'https://api.openai.com/v1/ai/move';
     fetch(url, {
@@ -164,6 +173,9 @@
     })
     .catch(error => {
       console.error('Error:', error);
+    })
+    .finally(() => {
+      actionButton.disabled = false;
     });
   }
 
