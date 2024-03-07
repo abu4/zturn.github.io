@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏</title>
+  <title>与AI助手交互的五子棋游戏0.1</title>
   <style>
     /* 样式代码 */
     body {
@@ -93,7 +93,7 @@
   // 检查AI助手是否在线
   function checkAIOnline() {
     if (!apiKey) return;
-    fetch('https://api.openai.com/v1/ai/health', {
+    fetch('https://api.openai.com/v1/engines', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`
