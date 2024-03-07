@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏</title>
+  <title>与AI助手交互的五子棋游戏0.5</title>
   <style>
     /* 样式代码 */
     body {
@@ -61,6 +61,14 @@
       overflow: auto;
       max-height: 200px;
     }
+    .ai-move-btn {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #000;
+    }
   </style>
 </head>
 <body>
@@ -72,7 +80,7 @@
   <button onclick="submitApiKey()">提交</button>
 </div>
 <div id="log" class="log"></div>
-<button onclick="callAI()">AI落子</button>
+<button class="ai-move-btn" onclick="callAI()">AI落子</button>
 
 <script>
   const board = document.getElementById('board');
@@ -152,7 +160,7 @@
   function callAI() {
     if (!aiOnline) return;
     const currentBoardState = getCurrentBoardState();
-    const url = 'https://api.openai.com/v1/ai/move';
+    const url = 'https://abu4-openai-proxy.herokuapp.com/ai/move';  // 使用服务器端代理
     fetch(url, {
       method: 'POST',
       headers: {
