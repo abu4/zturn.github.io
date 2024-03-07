@@ -3,40 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>检查 API Key</title>
+    <title>验证 OpenAI API Key</title>
 </head>
 <body>
-    <h1>检查 API Key</h1>
+    <h1>验证 OpenAI API Key</h1>
     <form id="api-key-form">
-        <label for="api-key">请输入您的 API Key：</label><br>
+        <label for="api-key">请输入您的 OpenAI API Key：</label><br>
         <input type="text" id="api-key" name="api-key" required><br>
-        <button type="submit">检查</button>
+        <button type="button" onclick="checkApiKey()">验证</button>
     </form>
     <p id="result"></p>
 
     <script>
-        document.getElementById('api-key-form').addEventListener('submit', function(event) {
-            event.preventDefault();
+        function checkApiKey() {
             const apiKey = document.getElementById('api-key').value.trim();
-            checkApiKey(apiKey);
-        });
-
-        function checkApiKey(apiKey) {
-            const backendURL = 'https://abu4.github.io/zturn.github.io/check-api-key?apiKey=' + apiKey;
+            const backendURL = 'https://api.openai.com/v1/engines';
 
             // 提供用户反馈
-            document.getElementById('result').textContent = '正在检查API密钥...';
+            document.getElementById('result').textContent = '正在验证 OpenAI API 密钥...';
 
-            fetch(backendURL)
+            // 发送 API 密钥到 OpenAI API 进行验证
+            fetch(backendURL, {
+                headers: {
+                    'Authorization': 'Bearer ' + apiKey
+                }
+            })
                 .then(response => {
                     if (response.ok) {
-                        return response.text();
+                        return response.json();
                     } else {
-                        throw new Error('API密钥不正确');
+                        throw new Error('OpenAI API 密钥验证失败');
                     }
                 })
                 .then(data => {
-                    document.getElementById('result').textContent = data;
+                    document.getElementById('result').textContent = 'OpenAI API 密钥验证成功';
+                    console.log(data); // 这里可以打印更详细的信息
                 })
                 .catch(error => {
                     document.getElementById('result').textContent = error.message;
