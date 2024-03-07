@@ -22,22 +22,24 @@
         });
 
         function checkApiKey(apiKey) {
-            // 发送请求到您的后端服务器，检查 API Key 的有效性
-            // 这里只是一个示例，您需要自己实现后端逻辑
-            // 这里假设您的后端 API 接受一个 GET 请求，参数为 apiKey
-            fetch('https://abu4.github.io/zturn.github.io' + apiKey)
+            const backendURL = 'https://abu4.github.io/zturn.github.io' + apiKey;
+
+            // 提供用户反馈
+            document.getElementById('result').textContent = '正在检查API密钥...';
+
+            fetch(backendURL)
                 .then(response => {
                     if (response.ok) {
                         return response.text();
                     } else {
-                        throw new Error('API Key 不正确');
+                        throw new Error('API密钥不正确');
                     }
                 })
                 .then(data => {
-                    document.getElementById('result').innerText = data;
+                    document.getElementById('result').textContent = data;
                 })
                 .catch(error => {
-                    document.getElementById('result').innerText = error.message;
+                    document.getElementById('result').textContent = error.message;
                 });
         }
     </script>
