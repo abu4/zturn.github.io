@@ -1,46 +1,45 @@
-HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>检查 Bard API 密钥连接</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检查 API Key</title>
 </head>
 <body>
-  <h1>检查 Bard API 密钥连接</h1>
-  <p>请输入您的 Bard API 密钥：</p>
-  <input type="text" id="api-key" placeholder="Bard API 密钥">
-  <button onclick="checkConnection()">检查连接</button>
-  <p id="result"></p>
+    <h1>检查 API Key</h1>
+    <form id="api-key-form">
+        <label for="api-key">请输入您的 API Key：</label><br>
+        <input type="text" id="api-key" name="api-key" required><br>
+        <button type="submit">检查</button>
+    </form>
+    <p id="result"></p>
 
-  <script>
-    function checkConnection() {
-      const apiKey = document.getElementById('api-key').value;
-      const requestBody = {
-        board: '---------',
-        player: 'black',
-      };
-
-      fetch('https://api.bard.ai/games/gomoku/move', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(requestBody),
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            document.getElementById('result').innerHTML = '连接成功！';
-          } else {
-            document.getElementById('result').innerHTML = '连接失败！错误信息：' + data.error;
-          }
-        })
-        .catch(error => {
-          document.getElementById('result').innerHTML = '连接失败！错误信息：' + error;
+    <script>
+        document.getElementById('api-key-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const apiKey = document.getElementById('api-key').value.trim();
+            checkApiKey(apiKey);
         });
-    }
-  </script>
+
+        function checkApiKey(apiKey) {
+            // 发送请求到您的后端服务器，检查 API Key 的有效性
+            // 这里只是一个示例，您需要自己实现后端逻辑
+            // 这里假设您的后端 API 接受一个 GET 请求，参数为 apiKey
+            fetch('https://your-backend-url/check-api-key?apiKey=' + apiKey)
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error('API Key 不正确');
+                    }
+                })
+                .then(data => {
+                    document.getElementById('result').innerText = data;
+                })
+                .catch(error => {
+                    document.getElementById('result').innerText = error.message;
+                });
+        }
+    </script>
 </body>
 </html>
