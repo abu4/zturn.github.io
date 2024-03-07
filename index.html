@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>与AI助手交互的五子棋游戏0.5</title>
+  <title>与AI助手交互的五子棋游戏0.6</title>
   <style>
     /* 样式代码 */
     body {
       display: flex;
       justify-content: center;
       align-items: center;
+      flex-direction: column;
       height: 100vh;
       margin: 0;
       background-color: #f0f0f0;
@@ -19,25 +20,29 @@
       grid-template-columns: repeat(15, 40px);
       grid-template-rows: repeat(15, 40px);
       gap: 1px;
+      margin-bottom: 20px;
     }
     .cell {
       width: 40px;
       height: 40px;
       border: 1px solid #000;
       background-color: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
     }
     .black {
       background-color: #000;
+      color: #fff;
       border-radius: 50%;
     }
     .white {
       background-color: #fff;
+      color: #000;
       border-radius: 50%;
     }
     .status {
-      position: fixed;
-      top: 10px;
-      right: 10px;
       padding: 10px;
       background-color: #fff;
       border: 1px solid #000;
@@ -49,25 +54,14 @@
       padding: 10px;
       background-color: #fff;
       border: 1px solid #000;
+      z-index: 1;
     }
-    .log {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
+    #action-button {
       padding: 10px;
       background-color: #fff;
       border: 1px solid #000;
-      width: 300px;
-      overflow: auto;
-      max-height: 200px;
-    }
-    .ai-move-btn {
-      position: fixed;
-      bottom: 10px;
-      right: 10px;
-      padding: 10px;
-      background-color: #fff;
-      border: 1px solid #000;
+      cursor: pointer;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -79,13 +73,12 @@
   <input type="text" id="api-key" placeholder="请输入您的API密钥">
   <button onclick="submitApiKey()">提交</button>
 </div>
-<div id="log" class="log"></div>
-<button class="ai-move-btn" onclick="callAI()">AI落子</button>
+<button id="action-button" onclick="callAI()">AI落子</button>
 
 <script>
   const board = document.getElementById('board');
   const status = document.getElementById('status');
-  const log = document.getElementById('log');
+  const actionButton = document.getElementById('action-button');
   let currentPlayer = 'black';
   let gameOver = false;
   let aiOnline = false;
@@ -103,10 +96,13 @@
     }
   }
 
+  // 初始化时检查AI助手在线状态
+  checkAIOnline();
+
   // 检查AI助手是否在线
   function checkAIOnline() {
     if (!apiKey) return;
-    fetch('https://api.openai.com/v1/ai/health', {
+    fetch('https://api.openai.com/v1/engines', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`
@@ -148,19 +144,20 @@
     }
 
     currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-
-    // 记录用户落子
-    log.textContent += `用户落子：${currentPlayer}，位置：(${row}, ${col})\n`;
-
-    // 调用AI助手
-    // callAI();  // 此处注释掉，由按钮触发AI落子
   }
 
   // 调用AI助手
   function callAI() {
-    if (!aiOnline) return;
+    if (!aiOnline) {
+      alert('AI助手当前离线，请稍后再试！');
+      return;
+    }
+
+    actionButton.disabled = true;
+
     const currentBoardState = getCurrentBoardState();
-    const url = 'https://abu4-openai-proxy.herokuapp.com/ai/move';  // 使用服务器端代理
+    const url = 'https://api.openai.com/v1/ai/move';
+
     fetch(url, {
       method: 'POST',
       headers: {
@@ -172,15 +169,31 @@
         board: currentBoardState
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('AI助手请求失败');
+      }
+      return response.json();
+    })
     .then(data => {
       const aiMove = data.move;
       const aiCell = document.querySelector(`.cell[data-row='${aiMove.row}'][data-col='${aiMove.col}']`);
-      aiCell.click(); // AI助手落子
-      log.textContent += `AI落子：${currentPlayer === 'black' ? 'white' : 'black'}，位置：(${aiMove.row}, ${aiMove.col})\n`;
+      
+      // 模拟AI落子动作
+      aiCell.classList.add(currentPlayer);
+      
+      if (checkWinner(aiMove.row, aiMove.col)) {
+        alert(currentPlayer === 'black' ? '黑棋获胜！' : '白棋获胜！');
+        gameOver = true;
+      } else {
+        currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+      }
     })
     .catch(error => {
       console.error('Error:', error);
+    })
+    .finally(() => {
+      actionButton.disabled = false;
     });
   }
 
@@ -202,8 +215,47 @@
 
   // 检查是否有玩家获胜
   function checkWinner(row, col) {
-    // 实现检查获胜的逻辑
-    return false;  // 示例代码，请根据实际情况修改
+    const directions = [
+      { row: 0, col: 1 },   // 水平
+      { row: 1, col: 0 },   // 垂直
+      { row: 1, col: 1 },   // 右下斜向
+      { row: 1, col: -1 }   // 左下斜向
+    ];
+
+    for (const dir of directions) {
+      if (countConsecutive(row, col, dir.row, dir.col) === 5) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // 辅助函数：计算连续的棋子数
+  function countConsecutive(row, col, rowDir, colDir) {
+    const playerClass = currentPlayer === 'black' ? 'black' : 'white';
+    let count = 0;
+
+    for (let i = -4; i <= 4; i++) {
+      const newRow = row + i * rowDir;
+      const newCol = col + i * colDir;
+
+      const cell = document.querySelector(`.cell[data-row='${newRow}'][data-col='${newCol}']`);
+
+      if (!cell) continue;
+
+      if (cell.classList.contains(playerClass)) {
+        count++;
+      } else {
+        count = 0;
+      }
+
+      if (count === 5) {
+        return 5; // 有5子连珠
+      }
+    }
+
+    return count;
   }
 
   // 提交API密钥
@@ -211,9 +263,6 @@
     apiKey = document.getElementById('api-key').value.trim();
     checkAIOnline();
   }
-
-  // 初始化时检查AI助手在线状态
-  checkAIOnline();
 </script>
 
 </body>
